@@ -27,7 +27,7 @@ const LandingPage = async () => {
       <p className='text-white row-start-3 row-end-6 text-5xl  font-normal text-left col-start-1 col-end-13 m-5'>Discover Share and Connect.</p>
       <div className='mb-10 text-center text-sm row-start-9 col-start-2 text-gray-400 col-end-12 flex flex-row justify-evenly items-center'>
         <p className='text-left text-sm'>
-          <span className='font-bold text-white'>Local-Social </span>connects people within a neighborhood to share news, events, and updates. It fosters community engagement and local connections.</p>
+          <span className='font-bold text-white'>AudioPath</span>connects people within a neighborhood to share news, events, and updates. It fosters community engagement and local connections.</p>
       </div>
       {button}
 
@@ -35,9 +35,9 @@ const LandingPage = async () => {
         <Image width={300} alt='image' height={300} src='/image-asset.gif' className='rounded-md border border-white border-solid transform rotate-12 m-2'></Image>
 
         <div className="about-section p-6 m-8 text-left text-white bg-gradient-to-r from-purple-500 to-blue-400 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-extrabold mb-4">About Locial</h2>
+          <h2 className="text-2xl font-extrabold mb-4">About AudioPath</h2>
           <p className="text-sm mb-4">
-            At Local Social, we&apos;re dedicated to building stronger communities. Our platform connects you with neighbors to share local news, events, and updates in real time.
+            At Audio Path, we&apos;re dedicated to building stronger communities. Our platform connects you with neighbors to share local news, events, and updates in real time.
           </p>
           <p className="text-sm">
             Whether you&apos;re exploring local happenings or engaging with nearby users, Local Social makes staying connected easy and fun. Join us in strengthening your community today!
