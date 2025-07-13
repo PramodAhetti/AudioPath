@@ -3,13 +3,10 @@
 import { PrismaClient } from "@prisma/client"
 const prisma=new PrismaClient();
 
+export async function deletePost(id: number) {
+  await prisma.post.delete({
+    where: { id }, // 👌 Correct for id: Int
+  });
 
-export async function deletePost(id:string){
-            
-    await prisma.post.delete({where:{
-                id
-            }})
-        
-         
-
+  return { message: "Post deleted successfully" };
 }
