@@ -27,7 +27,8 @@ export async function getPosts(coords:Location){
         
         return posts;
   }catch(e){
-    console.log(e);
+
+    console.log("error",e);
     throw new Error("Failed to fetch posts");
   } finally {
     await prisma.$disconnect();

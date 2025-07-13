@@ -1,24 +1,26 @@
-model User {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId // Use ObjectId for MongoDB
-  email String  @unique
-  posts Post[]
-}
-
-model Post {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId // Use ObjectId for MongoDB
-  content   String?
-  author    User     @relation(fields: [authorId], references: [id])
-  authorId  String   // Change to String to match User id type
-  latitude  Float
-  longitude Float
-  time      String?
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL") // Ensure your DATABASE_URL is set for MongoDB
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  author    User    @relation(fields: [authorId], references: [id]) 
+  authorId  String
+  category  String?
+  content   String
+  latitude  Float
+  longitude Float
+  time      String?
+}
+
+model User {
+  id    String   @id @default(auto()) @map("_id") @db.ObjectId
+  email String
+  owner Boolean?
+  posts Post[]
 }

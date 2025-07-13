@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authoptions";
 import { PrismaClient } from "@prisma/client";
 
-export async function submitPost(message: string,location:any) {
+export async function submitPost(category:string,message: string,location:any) {
   const prisma = new PrismaClient();
   try {
     const session = await getServerSession(authOptions);
@@ -29,7 +29,9 @@ export async function submitPost(message: string,location:any) {
         content: message,
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
+        category: category,
         authorId: author.id,
+        time: new Date().toISOString(),
       },
     });
     return { message: "Post is saved", post };

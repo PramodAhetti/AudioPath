@@ -11,7 +11,10 @@ const LandingPage = async () => {
   let button = <GoogleLog></GoogleLog>;
 
   if (user) {
-    button = <Link href={'/Near'} className="text-center flex justify-center items-center flex-col text-sm  w-full row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >Get Started</Link>
+    button = <div className='flex flex-col justify-around items-center row-start-6 row-end-8 col-start-2 col-end-12'>
+    <Link href={'/newPost'} className="h-10 text-center flex justify-center items-center flex-col text-base  w-full row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >✍️ New Post</Link>
+    <Link href={'/displayPost'} className="h-10 text-center flex justify-center items-center flex-col text-base w-full row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >🧭 Discover</Link>
+    </div>
   }
   console.log("button", button)
   return (
