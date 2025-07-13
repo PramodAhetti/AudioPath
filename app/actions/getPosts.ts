@@ -1,5 +1,6 @@
 "use server"
 import { PrismaClient } from "@prisma/client";
+import { env } from "process";
 type Location = {
     coords: {
       latitude: number;
@@ -7,8 +8,9 @@ type Location = {
     };
   };
 
-const radius=0.0001;
+const radius=env.RADIUS ? parseFloat(env.RADIUS) : 0.0001; 
 export async function getPosts(coords:Location){
+  console.log("Radius:", radius);
     const prisma=new PrismaClient();
     try{
         console.log(coords);
