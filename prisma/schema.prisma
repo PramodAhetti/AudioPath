@@ -1,17 +1,14 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 model User {
-  id    Int    @id @default(autoincrement())
-  email String @unique
+  id    String @id @default(auto()) @map("_id") @db.ObjectId // Use ObjectId for MongoDB
+  email String  @unique
   posts Post[]
 }
 
 model Post {
-  id        Int     @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId // Use ObjectId for MongoDB
   content   String?
-  author    User    @relation(fields: [authorId], references: [id])
-  authorId  Int
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String   // Change to String to match User id type
   latitude  Float
   longitude Float
   time      String?
@@ -22,6 +19,6 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL") // Ensure DATABASE_URL is set to a SQLite path
+  provider = "mongodb"
+  url      = env("DATABASE_URL") // Ensure your DATABASE_URL is set for MongoDB
 }
