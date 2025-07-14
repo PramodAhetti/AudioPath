@@ -9,7 +9,6 @@ import haversine from 'haversine-distance';
 import getLocation from '../actions/getLocation';
 import { getPosts } from '../actions/getPosts';
 import { getPostsbycategoryLocation } from '../actions/getPostsbycategory_Location';
-import DisplayPosts from '../component/displayPosts';
 import { useSession } from 'next-auth/react';
 
 // Type definition for a post
@@ -37,23 +36,22 @@ export default function LocationCategoryAudio() {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [spokenPostIds, setSpokenPostIds] = useState<Set<string>>(new Set());
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const avatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYmkp9a2rrD1Sskb9HLt5mDaTt4QaIs8CcBg&s';
+  const [audioDistance, setAudioDistance] = useState<number>(5); // Distance in meters
 
-  // Speak a given message
+  const avatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYmkp9a2rrD1Sskb9HLt5mDaTt4QaIs8CcBg&s';
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
-    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
 
-  // Handle category selection
   const changeCurrentCategory = async (e: React.MouseEvent<HTMLDivElement>) => {
-    const selectedCategory = e.currentTarget.textContent;
-    if (!selectedCategory || !userLocation) return;
-
+    const element = e.currentTarget;
+    const selectedCategory = element.textContent;
     setCurrentCategory(selectedCategory);
+
     const postsByCategory = await getPostsbycategoryLocation(userLocation, selectedCategory);
     setPosts(postsByCategory);
     setSpokenPostIds(new Set());
@@ -63,39 +61,43 @@ export default function LocationCategoryAudio() {
       btn.classList.remove('bg-green-500', 'text-white');
       btn.classList.add('bg-white', 'text-black');
     });
-    e.currentTarget.classList.remove('bg-white', 'text-black');
-    e.currentTarget.classList.add('bg-green-500', 'text-white');
+
+    element.classList.remove('bg-white', 'text-black');
+    element.classList.add('bg-green-500', 'text-white');
   };
 
-  // Fetch user location and posts
+  // Fetch location and all posts
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const fetchLocationAndPosts = async () => {
       try {
         const location = await getLocation();
         setUserLocation(location);
-        const allPosts = await getPosts(location);
-        const uniqueCategories = Array.from(new Set(allPosts.map((post) => post.category)));
+
+        const posts: Post[] = await getPosts(location);
+        setPosts(posts);
+        const uniqueCategories = Array.from(new Set(posts.map((post) => post.category)));
         setCategories(uniqueCategories);
-        setPosts(allPosts);
       } catch (error) {
-        console.error('Failed to fetch location/posts:', error);
+        console.error('Error fetching location or posts:', error);
       }
     };
 
-    fetchInitialData();
+    fetchLocationAndPosts();
   }, []);
 
-  // Update user location periodically
+  // Refresh location every 10 seconds
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const loc = await getLocation();
-      setUserLocation(loc);
-    }, 10000);
+    const updateLocation = async () => {
+      const newLocation = await getLocation();
+      setUserLocation(newLocation);
+    };
 
+    updateLocation();
+    const interval = setInterval(updateLocation, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Check for nearby unspoken posts every 2 seconds
+  // Audio trigger based on cached location and distance
   useEffect(() => {
     if (!userLocation || !posts.length) return;
 
@@ -105,27 +107,30 @@ export default function LocationCategoryAudio() {
         longitude: userLocation.coords.longitude,
       };
 
-      const nearbyPosts = posts
-        .filter((post) => !spokenPostIds.has(post.id))
-        .map((post) => {
-          const postLoc = { latitude: post.latitude, longitude: post.longitude };
-          return { post, distance: haversine(currentLoc, postLoc) };
-        })
-        .filter(({ distance }) => distance <= 50)
-        .sort((a, b) => a.distance - b.distance);
+      let nearestPost: Post | undefined;
+      let nearestDistance = Infinity;
 
-      if (nearbyPosts.length > 0) {
-        const { post, distance } = nearbyPosts[0];
-        speak(post.content);
-        console.log(`Speaking post '${post.content}' at ${distance.toFixed(2)} meters`);
-        setSpokenPostIds((prev) => new Set(prev.add(post.id)));
+      posts.forEach((post) => {
+        const postLoc = { latitude: post.latitude, longitude: post.longitude };
+        const distance = haversine(currentLoc, postLoc);
+
+        if (distance < nearestDistance && !spokenPostIds.has(post.id)) {
+          nearestPost = post;
+          nearestDistance = distance;
+        }
+      });
+
+      if (nearestPost && nearestDistance <= audioDistance) {
+        console.log(`Speaking post: ${nearestPost.content} at distance: ${nearestDistance}`);
+        speak(nearestPost.content);
+        setSpokenPostIds((prev) => new Set(prev.add(nearestPost!.id)));
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [userLocation, posts, spokenPostIds]);
+  }, [userLocation, posts, spokenPostIds, audioDistance]);
 
-  // Canvas-based map drawing
+  // Draw canvas
   useEffect(() => {
     if (!canvasRef.current || !userLocation || !posts.length) return;
 
@@ -139,36 +144,34 @@ export default function LocationCategoryAudio() {
     const centerY = height / 2;
     const scale = 2; // Pixels per meter
 
-    // Clear canvas
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    for (let x = 0; x <= width; x += 50) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    for (let x = 0; x < width; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, height);
       ctx.stroke();
     }
-    for (let y = 0; y <= height; y += 50) {
+    for (let y = 0; y < height; y += 50) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(width, y);
       ctx.stroke();
     }
 
-    // Draw user
+    // User dot
     ctx.fillStyle = 'blue';
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+    ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw posts
+    // Posts
     ctx.fillStyle = 'red';
     posts.forEach((post) => {
       const latDiff = (post.latitude - userLocation.coords.latitude) * 111320;
-      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * Math.PI / 180);
+      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * (Math.PI / 180));
       const x = centerX + lonDiff * scale;
       const y = centerY - latDiff * scale;
 
@@ -177,14 +180,13 @@ export default function LocationCategoryAudio() {
       ctx.fill();
     });
 
-    // Scale indicator
     ctx.strokeStyle = 'white';
     ctx.beginPath();
     ctx.moveTo(20, height - 20);
     ctx.lineTo(20 + 50 * scale, height - 20);
     ctx.stroke();
     ctx.fillStyle = 'white';
-    ctx.font = '12px sans-serif';
+    ctx.font = '12px Arial';
     ctx.fillText('50 meters', 20, height - 30);
   }, [userLocation, posts]);
 
@@ -195,20 +197,26 @@ export default function LocationCategoryAudio() {
         <Link href="/">
           <Home className="w-8 h-8 text-white" />
         </Link>
-        <Image src={avatar} width={40} height={40} alt="avatar" style={{ borderRadius: 20 }} />
+        <Image
+          src={avatar}
+          width={40}
+          height={40}
+          alt="avatar"
+          style={{ borderRadius: 20 }}
+        />
       </header>
 
       {/* Main Content */}
       <main className="flex flex-col items-center justify-center flex-1 space-y-4">
-        <h1 className="text-2xl font-semibold">Location-Based Audio Guide</h1>
+        <h1 className="text-2xl font-semibold">Location-Based Audio Guide with Map</h1>
 
         {userLocation ? (
           <div className="text-center text-white/90 space-y-4 w-full">
             <p>
-              Lat: {userLocation.coords.latitude.toFixed(4)} | Lon:{' '}
-              {userLocation.coords.longitude.toFixed(4)}
+              {userLocation.coords.latitude.toFixed(4)}, {userLocation.coords.longitude.toFixed(4)}
             </p>
 
+            {/* Category buttons */}
             <div className="flex flex-wrap justify-center items-center gap-2">
               {categories.map((cat, index) => (
                 <div
@@ -221,11 +229,29 @@ export default function LocationCategoryAudio() {
               ))}
             </div>
 
+            {/* Distance control */}
+            <div className="flex flex-col items-center text-sm mt-4">
+              <label htmlFor="distance" className="mb-1 text-white/70">
+                Trigger distance: {audioDistance} meter(s)
+              </label>
+              <input
+                id="distance"
+                type="range"
+                min={1}
+                max={50}
+                step={1}
+                value={audioDistance}
+                onChange={(e) => setAudioDistance(Number(e.target.value))}
+                className="w-48"
+              />
+            </div>
+
+            {/* Canvas Map */}
             <canvas
               ref={canvasRef}
               width={300}
               height={300}
-              className="border border-white/20 rounded-md mx-auto"
+              className="border border-white/20 rounded-md mx-auto mt-4"
             />
           </div>
         ) : (
@@ -233,6 +259,7 @@ export default function LocationCategoryAudio() {
         )}
       </main>
 
+      {/* Footer */}
       <footer className="text-center text-xs py-6 text-white/50">
         Walk into a zone to hear its message.
       </footer>
