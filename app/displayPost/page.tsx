@@ -109,7 +109,7 @@ export default function LocationCategoryAudio() {
           }
         });
       });
-    }, 5000); // Every 5 seconds
+    }, 1000); // Every 5 seconds
 
     return () => clearInterval(interval);
   }, [posts, spokenPostIds]);
