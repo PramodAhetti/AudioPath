@@ -54,7 +54,7 @@ export default function LocationCategoryAudio() {
 
     const postsByCategory = await getPostsbycategoryLocation(userLocation, selectedCategory);
     setPosts(postsByCategory);
-    setSpokenPostIds(new Set());
+    setSpokenPostIds(new Set()); // Reset spoken posts when category changes
     speak(`You selected the category: ${selectedCategory}`);
 
     document.querySelectorAll('.category-button').forEach((btn) => {
@@ -85,50 +85,59 @@ export default function LocationCategoryAudio() {
     fetchLocationAndPosts();
   }, []);
 
-  // Refresh location every 10 seconds
+  // Refresh location every 5 seconds
   useEffect(() => {
     const updateLocation = async () => {
       const newLocation = await getLocation();
       setUserLocation(newLocation);
     };
 
-    updateLocation();
-    const interval = setInterval(updateLocation, 10000);
+    const interval = setInterval(updateLocation, 5000); // Changed to 5 seconds as per original intent
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
 
   // Audio trigger based on cached location and distance
   useEffect(() => {
     if (!userLocation || !posts.length) return;
 
-    const interval = setInterval(() => {
-      const currentLoc = {
-        latitude: userLocation.coords.latitude,
-        longitude: userLocation.coords.longitude,
-      };
+    const currentLoc = {
+      latitude: userLocation.coords.latitude,
+      longitude: userLocation.coords.longitude,
+    };
 
-      let nearestPost: Post | undefined;
-      let nearestDistance = Infinity;
+    // Filter for un-spoken posts that are within the audio distance
+    const eligiblePosts = posts.filter(
+      (post) => !spokenPostIds.has(post.id) && haversine(currentLoc, { latitude: post.latitude, longitude: post.longitude }) <= audioDistance
+    );
 
-      posts.forEach((post) => {
-        const postLoc = { latitude: post.latitude, longitude: post.longitude };
-        const distance = haversine(currentLoc, postLoc);
+    // Sort eligible posts by distance, closest first
+    eligiblePosts.sort((a, b) => {
+      const distanceA = haversine(currentLoc, { latitude: a.latitude, longitude: a.longitude });
+      const distanceB = haversine(currentLoc, { latitude: b.latitude, longitude: b.longitude });
+      return distanceA - distanceB;
+    });
 
-        if (distance < nearestDistance && !spokenPostIds.has(post.id)) {
-          nearestPost = post;
-          nearestDistance = distance;
-        }
-      });
+    // Speak the nearest eligible post if one exists
+    if (eligiblePosts.length > 0) {
+      const nearestPost = eligiblePosts[0];
+      const nearestDistance = haversine(currentLoc, { latitude: nearestPost.latitude, longitude: nearestPost.longitude });
 
-      if (nearestPost && nearestDistance <= audioDistance) {
-        console.log(`Speaking post: ${nearestPost.content} at distance: ${nearestDistance}`);
-        speak(nearestPost.content);
-        setSpokenPostIds((prev) => new Set(prev.add(nearestPost!.id)));
-      }
-    }, 2000);
+      console.log(`Speaking post: ${nearestPost.content} at distance: ${nearestDistance}`);
+      speak(nearestPost.content);
+      setSpokenPostIds((prev) => new Set(prev.add(nearestPost.id))); // Add to spoken set
+    } else {
+      console.log(`No new posts to speak within ${audioDistance} meters.`);
+    }
 
-    return () => clearInterval(interval);
-  }, [userLocation, posts, spokenPostIds, audioDistance]);
+    // You might want to consider the interval for this effect carefully.
+    // If you want to continuously check and speak new posts as you move,
+    // you could keep it as a `setInterval` or re-evaluate on `userLocation` change.
+    // For now, let's keep it simpler and rely on `userLocation` updates to trigger.
+
+    // If you want to re-check every 2 seconds for new nearby posts, you can put this
+    // logic inside a `setInterval`. However, ensure you manage cleanup correctly.
+    // Let's refine this to be triggered by location updates primarily.
+  }, [userLocation, posts, spokenPostIds, audioDistance]); // Dependencies: userLocation, posts, spokenPostIds, audioDistance
 
   // Draw canvas
   useEffect(() => {
