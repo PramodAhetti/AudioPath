@@ -37,67 +37,65 @@ export default function LocationCategoryAudio() {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [spokenPostIds, setSpokenPostIds] = useState<Set<string>>(new Set());
-  const avatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYmkp9a2rrD1Sskb9HLt5mDaTt4QaIs8CcBg&s';
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const avatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYmkp9a2rrD1Sskb9HLt5mDaTt4QaIs8CcBg&s';
 
-  // Speak a given message using Web Speech API
+  // Speak a given message
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
 
+  // Handle category selection
   const changeCurrentCategory = async (e: React.MouseEvent<HTMLDivElement>) => {
-    const element = e.currentTarget;
-    const selectedCategory = element.textContent;
+    const selectedCategory = e.currentTarget.textContent;
+    if (!selectedCategory || !userLocation) return;
+
     setCurrentCategory(selectedCategory);
     const postsByCategory = await getPostsbycategoryLocation(userLocation, selectedCategory);
     setPosts(postsByCategory);
-    setSpokenPostIds(new Set()); // Reset spoken posts when category changes
+    setSpokenPostIds(new Set());
     speak(`You selected the category: ${selectedCategory}`);
 
-    // Update category button styles
     document.querySelectorAll('.category-button').forEach((btn) => {
       btn.classList.remove('bg-green-500', 'text-white');
       btn.classList.add('bg-white', 'text-black');
     });
-    element.classList.remove('bg-white', 'text-black');
-    element.classList.add('bg-green-500', 'text-white');
+    e.currentTarget.classList.remove('bg-white', 'text-black');
+    e.currentTarget.classList.add('bg-green-500', 'text-white');
   };
 
-  // Fetch initial location and posts
+  // Fetch user location and posts
   useEffect(() => {
-    const fetchLocationAndPosts = async () => {
+    const fetchInitialData = async () => {
       try {
         const location = await getLocation();
         setUserLocation(location);
-
-        const posts: Post[] = await getPosts(location);
-        const uniqueCategories = Array.from(new Set(posts.map((post) => post.category)));
+        const allPosts = await getPosts(location);
+        const uniqueCategories = Array.from(new Set(allPosts.map((post) => post.category)));
         setCategories(uniqueCategories);
-        setPosts(posts);
+        setPosts(allPosts);
       } catch (error) {
-        console.error('Error fetching location or posts:', error);
+        console.error('Failed to fetch location/posts:', error);
       }
     };
 
-    fetchLocationAndPosts();
+    fetchInitialData();
   }, []);
 
-  // Periodically update user location every 30 seconds
+  // Update user location periodically
   useEffect(() => {
-    const updateLocation = async () => {
-      setUserLocation(await getLocation());
-    };
+    const interval = setInterval(async () => {
+      const loc = await getLocation();
+      setUserLocation(loc);
+    }, 10000);
 
-    updateLocation(); // initial fetch
-
-    const locationInterval = setInterval(updateLocation, 10000); // every 30 seconds
-
-    return () => clearInterval(locationInterval);
+    return () => clearInterval(interval);
   }, []);
 
-  // Use cached userLocation for proximity checking every 1 second
+  // Check for nearby unspoken posts every 2 seconds
   useEffect(() => {
     if (!userLocation || !posts.length) return;
 
@@ -106,36 +104,28 @@ export default function LocationCategoryAudio() {
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
       };
-      let nearestPost:Post; 
-      let nearestDistance=10000;
-      posts.forEach((post) => {
-        const postLoc = {
-          latitude: post.latitude,
-          longitude: post.longitude,
-        };
 
-        const distance = haversine(currentLoc, postLoc); // meters
+      const nearbyPosts = posts
+        .filter((post) => !spokenPostIds.has(post.id))
+        .map((post) => {
+          const postLoc = { latitude: post.latitude, longitude: post.longitude };
+          return { post, distance: haversine(currentLoc, postLoc) };
+        })
+        .filter(({ distance }) => distance <= 50)
+        .sort((a, b) => a.distance - b.distance);
 
-        if (distance <= nearestDistance && !spokenPostIds.has(post.id)) {
-          nearestDistance = distance;
-          nearestPost = post
-          
-        }else{
-          console.log(`Not speaking post: ${post.content} (distance: ${distance})`);
-        }
-        }
-          
-    );
-          if(!nearestPost) return; 
-          console.log(`Nearest post: ${nearestPost?.content} (distance: ${nearestDistance})`);
-          speak(nearestPost.content);
-          setSpokenPostIds((prev) => new Set(prev.add(nearestPost.id)));
-    }, 2000); // check every 1 second
+      if (nearbyPosts.length > 0) {
+        const { post, distance } = nearbyPosts[0];
+        speak(post.content);
+        console.log(`Speaking post '${post.content}' at ${distance.toFixed(2)} meters`);
+        setSpokenPostIds((prev) => new Set(prev.add(post.id)));
+      }
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [userLocation, posts, spokenPostIds]);
 
-  // Draw visualization on canvas
+  // Canvas-based map drawing
   useEffect(() => {
     if (!canvasRef.current || !userLocation || !posts.length) return;
 
@@ -147,15 +137,14 @@ export default function LocationCategoryAudio() {
     const height = canvas.height;
     const centerX = width / 2;
     const centerY = height / 2;
-    const scale = 2; // Pixels per meter (adjust for visualization)
+    const scale = 2; // Pixels per meter
 
     // Clear canvas
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
     // Draw grid
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     for (let x = 0; x <= width; x += 50) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -169,34 +158,33 @@ export default function LocationCategoryAudio() {
       ctx.stroke();
     }
 
-    // Draw user (blue dot)
+    // Draw user
     ctx.fillStyle = 'blue';
     ctx.beginPath();
     ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
     ctx.fill();
 
-    // Draw posts (red dots)
+    // Draw posts
     ctx.fillStyle = 'red';
     posts.forEach((post) => {
-      const latDiff = (post.latitude - userLocation.coords.latitude) * 111320; // meters
-      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * (Math.PI / 180)); // meters
+      const latDiff = (post.latitude - userLocation.coords.latitude) * 111320;
+      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * Math.PI / 180);
       const x = centerX + lonDiff * scale;
-      const y = centerY - latDiff * scale; // invert y axis
+      const y = centerY - latDiff * scale;
 
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, 2 * Math.PI);
       ctx.fill();
     });
 
-    // Draw scale bar
+    // Scale indicator
     ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(20, height - 20);
     ctx.lineTo(20 + 50 * scale, height - 20);
     ctx.stroke();
     ctx.fillStyle = 'white';
-    ctx.font = '12px Arial';
+    ctx.font = '12px sans-serif';
     ctx.fillText('50 meters', 20, height - 30);
   }, [userLocation, posts]);
 
@@ -207,24 +195,20 @@ export default function LocationCategoryAudio() {
         <Link href="/">
           <Home className="w-8 h-8 text-white" />
         </Link>
-        <Image
-          src={avatar}
-          width={40}
-          height={40}
-          alt="avatar"
-          style={{ borderRadius: 20 }}
-        />
+        <Image src={avatar} width={40} height={40} alt="avatar" style={{ borderRadius: 20 }} />
       </header>
 
       {/* Main Content */}
       <main className="flex flex-col items-center justify-center flex-1 space-y-4">
-        <h1 className="text-2xl font-semibold">Location-Based Audio Guide with Map</h1>
+        <h1 className="text-2xl font-semibold">Location-Based Audio Guide</h1>
 
         {userLocation ? (
           <div className="text-center text-white/90 space-y-4 w-full">
             <p>
-              {userLocation.coords.latitude.toFixed(4)}, {userLocation.coords.longitude.toFixed(4)}
+              Lat: {userLocation.coords.latitude.toFixed(4)} | Lon:{' '}
+              {userLocation.coords.longitude.toFixed(4)}
             </p>
+
             <div className="flex flex-wrap justify-center items-center gap-2">
               {categories.map((cat, index) => (
                 <div
@@ -236,6 +220,7 @@ export default function LocationCategoryAudio() {
                 </div>
               ))}
             </div>
+
             <canvas
               ref={canvasRef}
               width={300}
