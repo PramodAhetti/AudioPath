@@ -44,7 +44,6 @@ export default function LocationCategoryAudio() {
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
     window.speechSynthesis.speak(utterance);
   };
 
@@ -87,16 +86,8 @@ export default function LocationCategoryAudio() {
 
   // Periodically update user location every 30 seconds
   useEffect(() => {
-    const updateLocation = () => {
-      if (!navigator.geolocation) return;
-      navigator.geolocation.getCurrentPosition((pos) => {
-        setUserLocation({
-          coords: {
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-          },
-        });
-      });
+    const updateLocation = async () => {
+      setUserLocation(await getLocation());
     };
 
     updateLocation(); // initial fetch
@@ -115,7 +106,8 @@ export default function LocationCategoryAudio() {
         latitude: userLocation.coords.latitude,
         longitude: userLocation.coords.longitude,
       };
-
+      let nearestPost:Post; 
+      let nearestDistance=10000;
       posts.forEach((post) => {
         const postLoc = {
           latitude: post.latitude,
@@ -124,12 +116,21 @@ export default function LocationCategoryAudio() {
 
         const distance = haversine(currentLoc, postLoc); // meters
 
-        if (distance <= 50 && !spokenPostIds.has(post.id)) {
-          speak(post.content);
-          setSpokenPostIds((prev) => new Set(prev.add(post.id)));
+        if (distance <= nearestDistance && !spokenPostIds.has(post.id)) {
+          nearestDistance = distance;
+          nearestPost = post
+          
+        }else{
+          console.log(`Not speaking post: ${post.content} (distance: ${distance})`);
         }
-      });
-    }, 1000); // check every 1 second
+        }
+          
+    );
+          if(!nearestPost) return; 
+          console.log(`Nearest post: ${nearestPost?.content} (distance: ${nearestDistance})`);
+          speak(nearestPost.content);
+          setSpokenPostIds((prev) => new Set(prev.add(nearestPost.id)));
+    }, 2000); // check every 1 second
 
     return () => clearInterval(interval);
   }, [userLocation, posts, spokenPostIds]);
