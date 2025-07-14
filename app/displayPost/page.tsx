@@ -76,6 +76,7 @@ export default function LocationCategoryAudio() {
         const posts: Post[] = await getPosts(location);
         const uniqueCategories = Array.from(new Set(posts.map((post) => post.category)));
         setCategories(uniqueCategories);
+        setPosts(posts);
       } catch (error) {
         console.error('Error fetching location or posts:', error);
       }
@@ -84,35 +85,54 @@ export default function LocationCategoryAudio() {
     fetchLocationAndPosts();
   }, []);
 
-  // Periodically check for nearby posts to speak
+  // Periodically update user location every 30 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!navigator.geolocation || !posts.length) return;
-
+    const updateLocation = () => {
+      if (!navigator.geolocation) return;
       navigator.geolocation.getCurrentPosition((pos) => {
-        const currentLoc = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        };
-
-        posts.forEach((post) => {
-          const postLoc = {
-            latitude: post.latitude,
-            longitude: post.longitude,
-          };
-
-          const distance = haversine(currentLoc, postLoc); // meters
-
-          if (distance <= 50 && !spokenPostIds.has(post.id)) {
-            speak(post.content);
-            setSpokenPostIds((prev) => new Set(prev.add(post.id)));
-          }
+        setUserLocation({
+          coords: {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          },
         });
       });
-    }, 1000); // Every 5 seconds
+    };
+
+    updateLocation(); // initial fetch
+
+    const locationInterval = setInterval(updateLocation, 10000); // every 30 seconds
+
+    return () => clearInterval(locationInterval);
+  }, []);
+
+  // Use cached userLocation for proximity checking every 1 second
+  useEffect(() => {
+    if (!userLocation || !posts.length) return;
+
+    const interval = setInterval(() => {
+      const currentLoc = {
+        latitude: userLocation.coords.latitude,
+        longitude: userLocation.coords.longitude,
+      };
+
+      posts.forEach((post) => {
+        const postLoc = {
+          latitude: post.latitude,
+          longitude: post.longitude,
+        };
+
+        const distance = haversine(currentLoc, postLoc); // meters
+
+        if (distance <= 50 && !spokenPostIds.has(post.id)) {
+          speak(post.content);
+          setSpokenPostIds((prev) => new Set(prev.add(post.id)));
+        }
+      });
+    }, 1000); // check every 1 second
 
     return () => clearInterval(interval);
-  }, [posts, spokenPostIds]);
+  }, [userLocation, posts, spokenPostIds]);
 
   // Draw visualization on canvas
   useEffect(() => {
@@ -157,22 +177,17 @@ export default function LocationCategoryAudio() {
     // Draw posts (red dots)
     ctx.fillStyle = 'red';
     posts.forEach((post) => {
-      const postLoc = { latitude: post.latitude, longitude: post.longitude };
-      const userLoc = { latitude: userLocation.coords.latitude, longitude: userLocation.coords.longitude };
-      const distance = haversine(userLoc, postLoc); // meters
-
-      // Convert lat/lon differences to canvas coordinates
-      const latDiff = (post.latitude - userLocation.coords.latitude) * 111320; // Approx meters per degree latitude
-      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * (Math.PI / 180)); // Approx meters per degree longitude
+      const latDiff = (post.latitude - userLocation.coords.latitude) * 111320; // meters
+      const lonDiff = (post.longitude - userLocation.coords.longitude) * 111320 * Math.cos(userLocation.coords.latitude * (Math.PI / 180)); // meters
       const x = centerX + lonDiff * scale;
-      const y = centerY - latDiff * scale; // Invert y-axis for canvas
+      const y = centerY - latDiff * scale; // invert y axis
 
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, 2 * Math.PI);
       ctx.fill();
     });
 
-    // Draw scale
+    // Draw scale bar
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -191,7 +206,13 @@ export default function LocationCategoryAudio() {
         <Link href="/">
           <Home className="w-8 h-8 text-white" />
         </Link>
-        <Image src={avatar} width={40} height={40} alt="avatar" style={{ borderRadius: 20 }} />
+        <Image
+          src={avatar}
+          width={40}
+          height={40}
+          alt="avatar"
+          style={{ borderRadius: 20 }}
+        />
       </header>
 
       {/* Main Content */}
