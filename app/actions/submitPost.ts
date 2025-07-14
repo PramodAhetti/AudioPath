@@ -11,7 +11,7 @@ export async function submitPost(category:string,message: string,location:any) {
     let author;
 
     if (session?.user?.email) {
-      author = await prisma.user.findUnique({
+      author = await prisma.user.findFirst({
         where: {
           email: session.user.email,
         },

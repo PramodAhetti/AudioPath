@@ -19,7 +19,7 @@ export default async function getCurLocation(){
             console.error("Error getting location:", error);
             reject(error); // Reject the promise if there's an error
           },
-          {enableHighAccuracy: true, timeout: 5000, maximumAge: 0}
+          {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}
         );
       } else {
         reject(new Error("Browser doesnt support GPS"));
