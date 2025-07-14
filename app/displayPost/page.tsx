@@ -251,7 +251,7 @@ export default function LocationCategoryAudio() {
           </button>
 
           {isSettingsOpen && (
-            <div className="absolute top-full right-0 mt-2 w-52 bg-gray-700 border border-gray-600 rounded-md shadow-lg p-4 z-10">
+            <div className="absolute top-full w-52 bg-gray-700 border border-gray-600 rounded-md shadow-lg p-4">
               <h3 className="text-lg font-semibold mb-3 text-white">Settings</h3>
 
               {/* Audio Trigger Distance Control */}
