@@ -44,6 +44,10 @@ export default function LocationCategoryAudio() {
   const speak = (text: string) => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
+ // 🔇 Stop current speech immediately
+  window.speechSynthesis.cancel();
+
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -118,7 +122,7 @@ export default function LocationCategoryAudio() {
     });
 
     // Speak the nearest eligible post if one exists
-    if (eligiblePosts.length > 0) {
+    if (eligiblePosts.length > 0 && currentCategory!==null) {
       const nearestPost = eligiblePosts[0];
       const nearestDistance = haversine(currentLoc, { latitude: nearestPost.latitude, longitude: nearestPost.longitude });
 
@@ -246,9 +250,9 @@ export default function LocationCategoryAudio() {
               <input
                 id="distance"
                 type="range"
-                min={1}
+                min={0}
                 max={50}
-                step={1}
+                step={0.3}
                 value={audioDistance}
                 onChange={(e) => setAudioDistance(Number(e.target.value))}
                 className="w-48"
