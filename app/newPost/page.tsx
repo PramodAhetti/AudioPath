@@ -58,7 +58,7 @@ export default function NewPostPage() {
       </header>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-10">
+      <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 mt-10">
         <div className="flex items-center border border-white/30 rounded px-3 py-2 bg-white/10 focus-within:ring-2 focus-within:ring-white">
           <ListChecks className="text-white/70 mr-2" />
           <input
@@ -84,7 +84,7 @@ export default function NewPostPage() {
         <button
           type="submit"
           disabled={loading}
-          className="flex items-center justify-center gap-2 bg-white text-blue-600 font-semibold rounded py-2 px-4 hover:bg-gray-100 transition disabled:opacity-50"
+          className="flex items-center justify-center gap-2 bg-purple-300 text-black font-semibold rounded py-2 px-4 hover:bg-gray-100 transition disabled:opacity-50"
         >
           <Send size={16} />
           {loading ? "Submitting..." : "Submit Post"}

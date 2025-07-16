@@ -37,8 +37,8 @@ export default function LocationCategoryAudio() {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [spokenPostIds, setSpokenPostIds] = useState<Set<string>>(new Set());
-  const [audioDistance, setAudioDistance] = useState<number>(5); // Distance in meters
-  const [locationInterval, setLocationInterval] = useState<number>(1000); // Default to 1 second
+  const [audioDistance, setAudioDistance] = useState<number>(1); // Distance in meters
+  const [locationInterval, setLocationInterval] = useState<number>(100); // Default to 1 second
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false); // State for dropdown visibility
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false); // New state for audio activity
   const [isLoading, setIsLoading] = useState<boolean>(true); // New state for loading
@@ -298,7 +298,7 @@ export default function LocationCategoryAudio() {
           </button>
 
           {isSettingsOpen && (
-            <div className="absolute top-full left-0 t-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4 animate-fade-in-down">
+            <div className="fixed left-0 t-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-4 animate-fade-in-down">
               <h3 className="text-lg font-semibold mb-4 text-white border-b border-gray-700 pb-2">Settings</h3>
 
               {/* Audio Trigger Distance Control */}
@@ -309,7 +309,7 @@ export default function LocationCategoryAudio() {
                 <input
                   id="audioDistance"
                   type="range"
-                  min={0}
+                  min={1}
                   max={50}
                   step={0.5}
                   value={audioDistance}

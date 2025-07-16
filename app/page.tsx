@@ -11,23 +11,23 @@ const LandingPage = async () => {
   let button = <GoogleLog></GoogleLog>;
 
   if (user) {
-    button = <div className='flex flex-col justify-around items-center row-start-6 row-end-8 col-start-2 col-end-12'>
-    <Link href={'/newPost'} className="h-10 text-center flex justify-center items-center flex-col text-base  w-full row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >✍️ New Post</Link>
-    <Link href={'/displayPost'} className="h-10 text-center flex justify-center items-center flex-col text-base w-full row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >🧭 Discover</Link>
+    button = <div className='flex flex-row justify-around items-center row-start-6 row-end-8 col-start-2 col-end-12'>
+    <Link href={'/newPost'} className="h-1/2 text-center flex justify-center items-center flex-col text-base  w-1/2 m-1  row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >✍️ New Post</Link>
+    <Link href={'/displayPost'} className="h-1/2 text-center flex justify-center items-center flex-col text-base w-1/2 m-1 row-start-7 row-end-8 md-2 col-start-2 col-end-8 text-white rounded-md font-semibold border bg-gradient-to-r from-purple-500 to-blue-400" >🧭 Discover</Link>
     </div>
   }
   console.log("button", button)
   return (
 
     <div className='w-full h-screen grid grid-rows-12 grid-cols-12'>
-      <nav className='p-2 row-start-1 col-start-1 col-end-13 flex flex-row justify-between items-center m-2'>
+      <nav className='p-3 fixed bg-purple-400 rounded-xl w-full flex flex-row justify-between items-center'>
         <div className='flex flex-row items-center justify-center'>
           <Image width={30} alt='Logo' height={30} src='/bg.png' className='aspect-square m-2 rounded-full border border-white'></Image>
           <h1 className='text-xl font-extrabold text-center row-start-5 row-end-7 col-start-2 col-end-12'>AudioPath</h1>
         </div>
         <AlignJustify size={30}></AlignJustify>
       </nav>
-      <p className='text-white row-start-3 row-end-6 text-5xl  font-normal text-left col-start-1 col-end-13 m-5'>Discover Share and Connect.</p>
+      <p className='text-white row-start-3 row-end-6 text-5xl  font-bold text-left col-start-1 col-end-13 m-5'>Discover Share and Connect.</p>
       <div className='mb-10 text-center text-sm row-start-9 col-start-2 text-gray-400 col-end-12 flex flex-row justify-evenly items-center'>
         <p className='text-left text-sm'>
           <span className='font-bold text-white'>AudioPath</span>connects people within a neighborhood to share news, events, and updates. It fosters community engagement and local connections.</p>
@@ -50,7 +50,7 @@ const LandingPage = async () => {
         </div>
 
         <footer className="w-full mt-7 p-4 text-center text-sm text-zinc-500 border-t border-gray-200">
-          <p>&copy; 2025 Locial. All rights reserved.</p>
+          <p>&copy; 2025 AudioPath. All rights reserved.</p>
         </footer>
       </div>
 
