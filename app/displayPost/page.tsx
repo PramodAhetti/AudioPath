@@ -42,6 +42,9 @@ export default function LocationCategoryAudio() {
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false); // State for dropdown visibility
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false); // New state for audio activity
   const [isLoading, setIsLoading] = useState<boolean>(true); // New state for loading
+  const [error, setError] = useState(null);
+  const [watchId, setWatchId] = useState(null);
+
 
   const avatar = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYmkp9a2rrD1Sskb9HLt5mDaTt4QaIs8CcBg&s';
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,15 +113,53 @@ export default function LocationCategoryAudio() {
   }, []);
 
   // Refresh location at the specified interval
-  useEffect(() => {
-    const updateLocation = async () => {
-      const newLocation = await getLocation();
-      setUserLocation(newLocation);
-    };
+useEffect(() => {
+    // Check if Geolocation API is supported
+    if (!navigator.geolocation) {
+      setError('Geolocation is not supported by your browser.');
+      return;
+    }
 
-    const intervalId = setInterval(updateLocation, locationInterval);
-    return () => clearInterval(intervalId); // Cleanup on unmount or interval change
-  }, [locationInterval]); // Re-run effect if locationInterval changes
+    const successCallback = (position: GeolocationPosition) => { // Add GeolocationPosition type hint
+      console.log('Current position:', position);
+      setUserLocation({
+        coords:{
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        }
+      });
+      setError(null); // Clear any previous errors
+    };
+
+    const errorCallback = (err: GeolocationPositionError) => { // Add GeolocationPositionError type hint
+      setError(`Error (${err.code}): ${err.message}`);
+      console.error(`ERROR(${err.code}): ${err.message}`);
+    };
+
+    const options = {
+      enableHighAccuracy: true, // Use GPS if available
+      timeout: 10000,           // Maximum time (ms) to wait for a position
+      maximumAge: 0,            // Don't use a cached position
+    };
+
+    // Start watching the position
+    const id = navigator.geolocation.watchPosition(
+      successCallback,
+      errorCallback,
+      options
+    );
+    // No need to set watchId in state if it's only used for cleanup in this same effect
+    // setWatchId(id); // <--- REMOVE THIS LINE IF YOU ONLY USE 'id' for the cleanup
+
+    // Cleanup function: Clear the watch when the component unmounts
+    return () => {
+      if (id) { // Use 'id' directly from this effect's scope
+        navigator.geolocation.clearWatch(id);
+        console.log('Location watch cleared.');
+      }
+    };
+  }, []); // Empty dependency array means this runs once on mount and cleans up on unmount
+// Re-run effect if locationInterval changes
 
   // Audio trigger based on cached location and distance
   useEffect(() => {
