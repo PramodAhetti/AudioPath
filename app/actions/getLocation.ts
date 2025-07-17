@@ -9,7 +9,7 @@ type Location = {
 export default async function getCurLocation(){
     return new Promise<Location>((resolve, reject) => {
       if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
+        navigator.geolocation.watchPosition(
           (position) => {
             let pos:Location={coords:{latitude:position.coords.latitude,longitude:position.coords.longitude}};
             console.log("Current position:", pos);

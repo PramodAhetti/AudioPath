@@ -278,7 +278,7 @@ export default function LocationCategoryAudio() {
   }, [isSettingsOpen]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white px-4 py-2 relative overflow-hidden">
+    <div className="h-screen flex flex-col bg-black text-white px-4 py-2 relative overflow-hidden">
       {/* Header */}
       <header className="flex justify-between items-center py-4 px-2">
         <Link href="/" className="p-2 rounded-full hover:bg-gray-800 transition-colors">
@@ -411,7 +411,7 @@ export default function LocationCategoryAudio() {
                 ref={canvasRef}
                 width={300}
                 height={300}
-                className="rounded-xl"
+                className="rounded-xl border border-white"
               />
             </div>
           </div>
