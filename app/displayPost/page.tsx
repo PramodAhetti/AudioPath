@@ -37,8 +37,8 @@ export default function LocationCategoryAudio() {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [spokenPostIds, setSpokenPostIds] = useState<Set<string>>(new Set());
-  const [audioDistance, setAudioDistance] = useState<number>(1); // Distance in meters
-  const [locationInterval, setLocationInterval] = useState<number>(100); // Default to 1 second
+  const [audioDistance, setAudioDistance] = useState<number>(10); // Distance in meters
+  const [curMsg, setCurMsg] = useState<string>("Hi"); // Default to 1 second
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false); // State for dropdown visibility
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false); // New state for audio activity
   const [isLoading, setIsLoading] = useState<boolean>(true); // New state for loading
@@ -54,12 +54,12 @@ export default function LocationCategoryAudio() {
     // Stop any ongoing speech before starting a new one
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
+    utterance.onstart = () => {setCurMsg(text); setIsSpeaking(true);}; 
+    utterance.onend = () => {setIsSpeaking(false)};
     utterance.onerror = () => setIsSpeaking(false); // Handle errors too
 
     window.speechSynthesis.speak(utterance);
+    
   };
 
   const changeCurrentCategory = async (e: React.MouseEvent<HTMLDivElement>) => {
@@ -361,22 +361,7 @@ useEffect(() => {
               </div>
 
               {/* Location Update Interval Control */}
-              <div className="flex flex-col mb-2">
-                <label htmlFor="locationInterval" className="mb-2 text-sm text-gray-300 font-medium flex justify-between items-center">
-                  Location Update Interval: <span className="font-bold text-white">{locationInterval / 1000} s</span>
-                </label>
-                <input
-                  id="locationInterval"
-                  type="range"
-                  min={100}
-                  max={5000} // Max 5 seconds, more realistic for mobile
-                  step={100}
-                  value={locationInterval}
-                  onChange={(e) => setLocationInterval(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg"
-                  style={{'--webkit-slider-thumb-bg': '#4CAF50'} as React.CSSProperties} // Custom thumb color
-                />
-              </div>
+              
             </div>
           )}
         </div>
@@ -394,7 +379,7 @@ useEffect(() => {
       {/* Main Content */}
       <main className="flex flex-col items-center flex-1 py-4 px-2 overflow-y-auto">
         <h1 className="text-3xl font-extrabold mb-6 text-center text-gray-100">
-          Audio GeoGuide
+         {curMsg} 
         </h1>
 
         {isLoading && !userLocation ? (
@@ -422,7 +407,7 @@ useEffect(() => {
                     Active Category: <span className="text-green-400 font-bold">{currentCategory}</span>
                   </>
                 ) : (
-                  <span className="text-yellow-500">Please select a category</span>
+                  <span className="text-yellow-500 text-sm">Please select a category</span>
                 )}
               </h2>
             </div>
@@ -447,7 +432,7 @@ useEffect(() => {
             </div>
 
             {/* Canvas Map */}
-            <div className="relative w-full max-w-[300px] mx-auto bg-gray-800 border-2 border-gray-700 rounded-xl shadow-lg aspect-square">
+            <div className="w-full flex flex-row justify-center  bg-gray-800 border-2 border-gray-700 rounded-xl shadow-lg aspect-square">
               <canvas
                 ref={canvasRef}
                 width={300}
